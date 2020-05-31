@@ -78,15 +78,6 @@ class Show(db.Model):
     start_time = db.Column(db.String(50))
 
 
-# class Area(db.Model):
-#   __tablename__ = 'Area'
-#
-#   id = db.Column(db.Integer, primary_key=True)
-#   city = db.Column(db.Integer)
-#   state = db.Column(db.Integer)
-#   venues = db.relationship('Venue', backref='area')
-
-
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -115,30 +106,45 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
-  return render_template('pages/venues.html', areas=data);
+  data = []
+  areas = Venue.query.distinct(Venue.city, Venue.state).all()
+  for area in areas:
+    venue_data = []
+    venue_list = Venue.query.filter_by(state=area.state, city=area.city).all()
+    for v in venue_list:
+      venue_data.append({
+        'id': v.id,
+        'name': v.name,
+        'num_upcoming_shows': len(Show.query.filter_by(venue_id=v.id).all()),
+      })
+    data.append({
+      'state': area.state,
+      'city': area.city,
+      'venues': venue_data,
+    })
+
+  # data=[{
+  #   "city": "San Francisco",
+  #   "state": "CA",
+  #   "venues": [{
+  #     "id": 1,
+  #     "name": "The Musical Hop",
+  #     "num_upcoming_shows": 0,
+  #   }, {
+  #     "id": 3,
+  #     "name": "Park Square Live Music & Coffee",
+  #     "num_upcoming_shows": 1,
+  #   }]
+  # }, {
+  #   "city": "New York",
+  #   "state": "NY",
+  #   "venues": [{
+  #     "id": 2,
+  #     "name": "The Dueling Pianos Bar",
+  #     "num_upcoming_shows": 0,
+  #   }]
+  # }]
+  return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
